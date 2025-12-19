@@ -1,29 +1,35 @@
-
-#include "get_next_line.h"
-
-#include <stdio.h>
 #include <fcntl.h>
-#include <unistd.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include "get_next_line.h"
 
 int main(int argc, char **argv)
 {
     int     fd;
     char    *line;
 
-    if (argc != 2)
-        return (1);
-    fd = open(argv[1], O_RDONLY);
-    if (fd == -1)
+    if (argc >= 2)
     {
-        printf("Error opening file");
-        return (1);
+        fd = open(argv[1], O_RDONLY);
+        if (fd == -1)
+        {
+            printf("Error opening file");
+            return (1);
+        }
     }
+    else
+    {
+        fd = 0;
+    }
+
     while ((line = get_next_line(fd)))
     {
         printf("%s", line);
         free(line);
     }
-    close(fd);
+    
+    if (argc >= 2)
+        close(fd);
+        
     return (0);
 }

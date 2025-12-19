@@ -1,0 +1,1 @@
+Questa riga non finisce col carattere new line
