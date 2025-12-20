@@ -25,7 +25,7 @@ Ensure that the path is right and set a proper timeout time considering valgrind
 
 ```text
    SOURCE_PATH="../"
-   TIME=10
+   TIMEOUT_VAL=15
 ```
 
 ## 🚀 2. First Run
