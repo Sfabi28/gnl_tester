@@ -1,8 +1,12 @@
 #!/bin/bash
 
 SOURCE_PATH="../"
+TIMEOUT_VAL="10s"
 
-# Colori aggiornati per matchare Python (Serie 9x invece di 3x)
+
+
+
+
 GREEN='\033[92m'
 RED='\033[91m'
 CYAN='\033[96m'
@@ -10,6 +14,8 @@ YELLOW='\033[93m'
 RESET='\033[0m'
 MAGENTA='\033[95m'
 BLUE='\033[94m'
+
+
 
 run_gnl_tests() {
     MODE=$1
@@ -32,7 +38,7 @@ run_gnl_tests() {
         CHECKER_FILE="checker.py"
     fi
 
-    echo -e "${CYAN}[1] Running Norminette...${RESET}"
+    echo -e "${CYAN}Running Norminette...${RESET}"
     norminette "${SOURCE_PATH}${GNL_FILE}" "${SOURCE_PATH}${UTILS_FILE}" "${SOURCE_PATH}${HEADER_FILE}"
     [ $? -ne 0 ] && echo -e "${RED}Norminette Found Errors!${RESET}" || echo -e "${GREEN}Norminette OK!${RESET}"
     echo ""
@@ -73,31 +79,49 @@ run_gnl_tests() {
                 
                 echo -n "Mix $(basename "$FILE_A") + $(basename "$FILE_B"): "
                 
-                valgrind --leak-check=full --show-leak-kinds=all ./gnl_tester "$FILE_A" "$FILE_B" > outputs/user_output.txt 2> outputs/valgrind.log
-                python3 $CHECKER_FILE "$FILE_A" "$FILE_B" outputs/user_output.txt | tr -d '\n'
-                echo -n " "
+                
+                timeout $TIMEOUT_VAL valgrind --leak-check=full --show-leak-kinds=all ./gnl_tester "$FILE_A" "$FILE_B" > outputs/user_output.txt 2> outputs/valgrind.log
+                EXIT_CODE=$?
 
-                if grep -q "All heap blocks were freed -- no leaks are possible" outputs/valgrind.log; then
-                    echo -e "${GREEN}[MOK]${RESET}"
+                if [ $EXIT_CODE -eq 124 ]; then
+                    echo -e "${RED}[TIMEOUT]${RESET}"
+                elif [ $EXIT_CODE -eq 139 ]; then
+                    echo -e "${RED}[SIGSEGV]${RESET}"
                 else
-                    echo -e "${RED}[MKO]${RESET}"
+                    python3 $CHECKER_FILE "$FILE_A" "$FILE_B" outputs/user_output.txt | tr -d '\n'
+                    echo -n " "
+                    if grep -q "All heap blocks were freed -- no leaks are possible" outputs/valgrind.log; then
+                        echo -e "${GREEN}[MOK]${RESET}"
+                    else
+                        echo -e "${RED}[MKO]${RESET}"
+                    fi
                 fi
             done
+            
             
             FILE_A="${FILES[NUM_FILES-1]}"
             FILE_B="${FILES[0]}"
             if [ -e "$FILE_A" ] && [ -e "$FILE_B" ]; then
                 echo -n "Mix $(basename "$FILE_A") + $(basename "$FILE_B"): "
-                valgrind --leak-check=full --show-leak-kinds=all ./gnl_tester "$FILE_A" "$FILE_B" > outputs/user_output.txt 2> outputs/valgrind.log
-                python3 $CHECKER_FILE "$FILE_A" "$FILE_B" outputs/user_output.txt | tr -d '\n'
-                echo -n " "
-                if grep -q "All heap blocks were freed -- no leaks are possible" outputs/valgrind.log; then
-                    echo -e "${GREEN}[MOK]${RESET}"
+                timeout $TIMEOUT_VAL valgrind --leak-check=full --show-leak-kinds=all ./gnl_tester "$FILE_A" "$FILE_B" > outputs/user_output.txt 2> outputs/valgrind.log
+                EXIT_CODE=$?
+
+                if [ $EXIT_CODE -eq 124 ]; then
+                    echo -e "${RED}[TIMEOUT]${RESET}"
+                elif [ $EXIT_CODE -eq 139 ]; then
+                    echo -e "${RED}[SIGSEGV]${RESET}"
                 else
-                    echo -e "${RED}[MKO]${RESET}"
+                    python3 $CHECKER_FILE "$FILE_A" "$FILE_B" outputs/user_output.txt | tr -d '\n'
+                    echo -n " "
+                    if grep -q "All heap blocks were freed -- no leaks are possible" outputs/valgrind.log; then
+                        echo -e "${GREEN}[MOK]${RESET}"
+                    else
+                        echo -e "${RED}[MKO]${RESET}"
+                    fi
                 fi
             fi
 
+            
             TWIN_FILE=""
             for f in files/*; do
                 if [ -s "$f" ]; then
@@ -110,19 +134,26 @@ run_gnl_tests() {
                 NAME=$(basename "$TWIN_FILE")
                 echo -n "Twin Mix $NAME + $NAME (Same File): "
                 
-                valgrind --leak-check=full --show-leak-kinds=all ./gnl_tester "$TWIN_FILE" "$TWIN_FILE" > outputs/user_output.txt 2> outputs/valgrind.log
-                
-                python3 $CHECKER_FILE "$TWIN_FILE" "$TWIN_FILE" outputs/user_output.txt | tr -d '\n'
-                echo -n " "
+                timeout $TIMEOUT_VAL valgrind --leak-check=full --show-leak-kinds=all ./gnl_tester "$TWIN_FILE" "$TWIN_FILE" > outputs/user_output.txt 2> outputs/valgrind.log
+                EXIT_CODE=$?
 
-                if grep -q "All heap blocks were freed -- no leaks are possible" outputs/valgrind.log; then
-                    echo -e "${GREEN}[MOK]${RESET}"
+                if [ $EXIT_CODE -eq 124 ]; then
+                    echo -e "${RED}[TIMEOUT]${RESET}"
+                elif [ $EXIT_CODE -eq 139 ]; then
+                    echo -e "${RED}[SIGSEGV]${RESET}"
                 else
-                    echo -e "${RED}[MKO]${RESET}"
+                    python3 $CHECKER_FILE "$TWIN_FILE" "$TWIN_FILE" outputs/user_output.txt | tr -d '\n'
+                    echo -n " "
+                    if grep -q "All heap blocks were freed -- no leaks are possible" outputs/valgrind.log; then
+                        echo -e "${GREEN}[MOK]${RESET}"
+                    else
+                        echo -e "${RED}[MKO]${RESET}"
+                    fi
                 fi
             fi
 
         else
+            
             if [ -e "main_error.c" ]; then
                 echo -n "Test INVALID FDs: "
                 if [ "$SIZE" == "DEFAULT" ]; then
@@ -132,18 +163,25 @@ run_gnl_tests() {
                 fi
                 
                 if [ $? -eq 0 ]; then
-                    valgrind --leak-check=full ./gnl_error_tester > outputs/error_out.txt 2> outputs/valgrind_error.log
-                    RESULT=$(cat outputs/error_out.txt)
-                    
-                    if [ "$RESULT" == "OK" ]; then
-                         echo -ne "${GREEN}OK${RESET} "
-                         if grep -q "All heap blocks were freed -- no leaks are possible" outputs/valgrind_error.log; then
-                            echo -e "${GREEN}[MOK]${RESET}"
-                         else
-                            echo -e "${RED}[MKO]${RESET}"
-                         fi
+                    timeout $TIMEOUT_VAL valgrind --leak-check=full ./gnl_error_tester > outputs/error_out.txt 2> outputs/valgrind_error.log
+                    EXIT_CODE=$?
+
+                    if [ $EXIT_CODE -eq 124 ]; then
+                        echo -e "${RED}[TIMEOUT]${RESET}"
+                    elif [ $EXIT_CODE -eq 139 ]; then
+                        echo -e "${RED}[SIGSEGV]${RESET}"
                     else
-                        echo -e "${RED}[KO] (Output: $RESULT)${RESET}"
+                        RESULT=$(cat outputs/error_out.txt)
+                        if [ "$RESULT" == "OK" ]; then
+                             echo -ne "${GREEN}OK${RESET} "
+                             if grep -q "All heap blocks were freed -- no leaks are possible" outputs/valgrind_error.log; then
+                                echo -e "${GREEN}[MOK]${RESET}"
+                             else
+                                echo -e "${RED}[MKO]${RESET}"
+                             fi
+                        else
+                            echo -e "${RED}[KO] (Output: $RESULT)${RESET}"
+                        fi
                     fi
                 else
                     echo -e "${RED}[Compilation Fail]${RESET}"
@@ -152,30 +190,46 @@ run_gnl_tests() {
             fi
 
             echo -n "Test STDIN (Pipe): "
-            echo -e "Line 1\nLine 2\nLine 3" | valgrind --leak-check=full --show-leak-kinds=all ./gnl_tester > outputs/user_output.txt 2> outputs/valgrind.log
-            echo -e "Line 1\nLine 2\nLine 3" > outputs/stdin_expected.txt
-            python3 $CHECKER_FILE outputs/stdin_expected.txt outputs/user_output.txt | tr -d '\n'
-            echo -n " "
-            if grep -q "All heap blocks were freed -- no leaks are possible" outputs/valgrind.log; then
-                echo -e "${GREEN}[MOK]${RESET}"
+            echo -e "Line 1\nLine 2\nLine 3" | timeout $TIMEOUT_VAL valgrind --leak-check=full --show-leak-kinds=all ./gnl_tester > outputs/user_output.txt 2> outputs/valgrind.log
+            EXIT_CODE=$?
+
+            if [ $EXIT_CODE -eq 124 ]; then
+                echo -e "${RED}[TIMEOUT]${RESET}"
+            elif [ $EXIT_CODE -eq 139 ]; then
+                echo -e "${RED}[SIGSEGV]${RESET}"
             else
-                echo -e "${RED}[MKO]${RESET}"
+                echo -e "Line 1\nLine 2\nLine 3" > outputs/stdin_expected.txt
+                python3 $CHECKER_FILE outputs/stdin_expected.txt outputs/user_output.txt | tr -d '\n'
+                echo -n " "
+                if grep -q "All heap blocks were freed -- no leaks are possible" outputs/valgrind.log; then
+                    echo -e "${GREEN}[MOK]${RESET}"
+                else
+                    echo -e "${RED}[MKO]${RESET}"
+                fi
             fi
 
             for file in files/*; do
                 [ -e "$file" ] || continue
                 FILENAME=$(basename "$file")
                 
-                valgrind --leak-check=full --show-leak-kinds=all ./gnl_tester "$file" > outputs/user_output.txt 2> outputs/valgrind.log
+                timeout $TIMEOUT_VAL valgrind --leak-check=full --show-leak-kinds=all ./gnl_tester "$file" > outputs/user_output.txt 2> outputs/valgrind.log
+                EXIT_CODE=$?
                 
                 echo -n "Test $FILENAME: "
-                python3 $CHECKER_FILE "$file" outputs/user_output.txt | tr -d '\n'
-                echo -n " " 
                 
-                if grep -q "All heap blocks were freed -- no leaks are possible" outputs/valgrind.log; then
-                    echo -e "${GREEN}[MOK]${RESET}"
+                if [ $EXIT_CODE -eq 124 ]; then
+                    echo -e "${RED}[TIMEOUT]${RESET}"
+                elif [ $EXIT_CODE -eq 139 ]; then
+                    echo -e "${RED}[SIGSEGV]${RESET}"
                 else
-                    echo -e "${RED}[MKO]${RESET}"
+                    python3 $CHECKER_FILE "$file" outputs/user_output.txt | tr -d '\n'
+                    echo -n " " 
+                    
+                    if grep -q "All heap blocks were freed -- no leaks are possible" outputs/valgrind.log; then
+                        echo -e "${GREEN}[MOK]${RESET}"
+                    else
+                        echo -e "${RED}[MKO]${RESET}"
+                    fi
                 fi
             done
         fi

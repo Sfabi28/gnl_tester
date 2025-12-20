@@ -21,6 +21,13 @@ Ensure that the folder of this tester (`gnl_tester`) is located **INSIDE** the r
           └── test_results.log
 ```
 
+Ensure that the path is right and set a proper timeout time considering valgrind **INSIDE** the `launch.sh` file
+
+```text
+   SOURCE_PATH="../"
+   TIME=10
+```
+
 ## 🚀 2. First Run
 
 
