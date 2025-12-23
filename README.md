@@ -21,11 +21,17 @@ Ensure that the folder of this tester (`gnl_tester`) is located **INSIDE** the r
           └── test_results.log
 ```
 
+**Important:** To avoid accidentally committing the tester to your repository, add `gnl_tester/` to your `.gitignore` file:
+
+```bash
+echo "gnl_tester/" >> .gitignore
+```
+
 Ensure that the path is right and set a proper timeout time considering valgrind **INSIDE** the `launch.sh` file
 
 ```text
    SOURCE_PATH="../"
-   TIME=10
+   TIMEOUT_VAL=15
 ```
 
 ## 🚀 2. First Run
