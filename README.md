@@ -95,3 +95,13 @@ The suite runs your get_next_line against the system's getline or expected outpu
         Alternating between FDs (e.g., Read FD 3, then FD 4, then FD 3 again).
 ```
 Happy debugging!🖥️
+
+
+
+## 🛠️ More 42 Tools
+
+Explore my full suite of testers:
+
+[![ft_printf](https://img.shields.io/badge/42-ft__printf-blue?style=for-the-badge&logo=c)](https://github.com/Sfabi28/printf_tester)
+[![libft](https://img.shields.io/badge/42-libft-green?style=for-the-badge&logo=c)](https://github.com/Sfabi28/libft_tester)
+[![push_swap](https://img.shields.io/badge/42-push__swap-orange?style=for-the-badge&logo=c)](https://github.com/Sfabi28/push_swap_tester)
