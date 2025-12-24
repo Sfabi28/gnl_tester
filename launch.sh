@@ -3,9 +3,6 @@
 SOURCE_PATH="../"
 TIMEOUT_VAL="15s"
 
-
-
-
 TESTER_NAME="gnl_tester"
 LOG_FILE="test_results.log"
 
@@ -17,7 +14,6 @@ RESET='\033[0m'
 MAGENTA='\033[95m'
 BLUE='\033[94m'
 
-
 strip_colors() {
     sed $'s/\033\[[0-9;]*m//g'
 }
@@ -25,13 +21,11 @@ strip_colors() {
 echo "=== TEST SESSION STARTED: $(date) ===" > "$LOG_FILE"
 echo "Detailed logs below." >> "$LOG_FILE"
 echo "-----------------------------------" >> "$LOG_FILE"
-
 echo ""
 
 echo -e "${CYAN} Checking Norminette...${RESET}"
 
 TESTER_DIR=$(basename "$PWD")
-
 FILES_TO_CHECK=$(find "$SOURCE_PATH" -maxdepth 1 -type f \( -name "*.c" -o -name "*.h" \) | grep -v "/$TESTER_DIR/" | tr '\n' ' ')
 
 if [ -z "$FILES_TO_CHECK" ]; then
@@ -52,13 +46,59 @@ else
 fi
 echo ""
 
+check_allowed_function() {
+    MODE=$1
+    echo -e "\n${BLUE}=== ALLOWED FUNCTIONS CHECK ($MODE) ===${RESET}"
+
+    if [ "$MODE" == "BONUS" ]; then
+        SRCS="${SOURCE_PATH}get_next_line_bonus.c ${SOURCE_PATH}get_next_line_utils_bonus.c"
+    else
+        SRCS="${SOURCE_PATH}get_next_line.c ${SOURCE_PATH}get_next_line_utils.c"
+    fi
+
+    cc -Wall -Wextra -Werror -D BUFFER_SIZE=42 -c $SRCS -I "$SOURCE_PATH" > /dev/null 2>&1
+    
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}Compilation failed checking functions. (Files missing?)${RESET}"
+        return
+    fi
+
+    UNDEFINED=$(nm -u *.o 2>/dev/null | grep -v ":" | awk '{print $NF}' | sort | uniq)
+    MY_FUNCS=$(nm -gU *.o 2>/dev/null | grep -v ":" | awk '{print $NF}' | sed 's/^_//' | sort | uniq)
+    ALLOWED="read malloc free"
+    VIOLATION=0
+
+    for func in $UNDEFINED; do
+        clean_func=${func%%@*}
+        clean_func=${clean_func#_}
+
+        if [[ -z "$clean_func" || "$clean_func" == .* ]]; then continue; fi
+        if [[ "$clean_func" == "dyld_stub_binder" || "$clean_func" == "stack_chk_fail" || "$clean_func" == "_stack_chk_fail" ]]; then continue; fi
+
+        if echo "$MY_FUNCS" | grep -F -x -q "$clean_func"; then continue; fi
+
+        if ! echo "$ALLOWED" | grep -F -x -q "$clean_func"; then
+            echo -e "${RED}Forbidden function used: $clean_func${RESET}"
+            VIOLATION=1
+        fi
+    done
+
+    rm -f *.o
+
+    if [ $VIOLATION -eq 0 ]; then
+        echo -e "No Forbidden Functions. ${GREEN}[OK]${RESET}"
+    else
+        echo -e "${RED}Forbidden functions detected!${RESET}"
+        echo "FORBIDDEN FUNCTIONS DETECTED ($MODE)" >> "$LOG_FILE"
+    fi
+}
+
 run_gnl_tests() {
     MODE=$1
     
     echo -e "\n${BLUE}**************************************************${RESET}"
     echo -e "${BLUE}        STARTING MODE: $MODE PART                 ${RESET}"
     echo -e "${BLUE}**************************************************${RESET}\n"
-
     echo -e "\n\n>>> STARTING $MODE PART <<<\n" >> "$LOG_FILE"
 
     if [ "$MODE" == "BONUS" ]; then
@@ -74,6 +114,8 @@ run_gnl_tests() {
         MAIN_FILE="main.c"
         CHECKER_FILE="checker.py"
     fi
+
+    check_allowed_function "$MODE"
 
     mkdir -p outputs
     BUFFER_SIZES="DEFAULT 1 42 1000 1000000"
@@ -127,7 +169,6 @@ run_gnl_tests() {
                 else
                     CHECK_OUT=$(python3 $CHECKER_FILE "$FILE_A" "$FILE_B" outputs/user_output.txt)
                     echo "$CHECK_OUT" | tr -d '\n'
-                    # MODIFICA 1: strip_colors
                     echo "$CHECK_OUT" | strip_colors >> "$LOG_FILE"
                     
                     echo -n " "
@@ -141,7 +182,6 @@ run_gnl_tests() {
                 fi
                 echo "----------------" >> "$LOG_FILE"
             done
-            
             
             FILE_A="${FILES[NUM_FILES-1]}"
             FILE_B="${FILES[0]}"
@@ -162,7 +202,6 @@ run_gnl_tests() {
                 else
                     CHECK_OUT=$(python3 $CHECKER_FILE "$FILE_A" "$FILE_B" outputs/user_output.txt)
                     echo "$CHECK_OUT" | tr -d '\n'
-                    # MODIFICA 2: strip_colors
                     echo "$CHECK_OUT" | strip_colors >> "$LOG_FILE"
 
                     echo -n " "
@@ -176,7 +215,6 @@ run_gnl_tests() {
                 fi
                 echo "----------------" >> "$LOG_FILE"
             fi
-
             
             TWIN_FILE=""
             for f in files/*; do
@@ -204,7 +242,6 @@ run_gnl_tests() {
                 else
                     CHECK_OUT=$(python3 $CHECKER_FILE "$TWIN_FILE" "$TWIN_FILE" outputs/user_output.txt)
                     echo "$CHECK_OUT" | tr -d '\n'
-                    # MODIFICA 3: strip_colors
                     echo "$CHECK_OUT" | strip_colors >> "$LOG_FILE"
 
                     echo -n " "
@@ -266,7 +303,6 @@ run_gnl_tests() {
                 echo "----------------" >> "$LOG_FILE"
             fi
 
-
             echo -n "Test STDIN (Pipe): "
             echo "Test: STDIN (Pipe)" >> "$LOG_FILE"
             echo -e "Line 1\nLine 2\nLine 3" | timeout $TIMEOUT_VAL valgrind --leak-check=full --show-leak-kinds=all ./gnl_tester > outputs/user_output.txt 2> outputs/valgrind.log
@@ -282,7 +318,6 @@ run_gnl_tests() {
                 echo -e "Line 1\nLine 2\nLine 3" > outputs/stdin_expected.txt
                 CHECK_OUT=$(python3 $CHECKER_FILE outputs/stdin_expected.txt outputs/user_output.txt)
                 echo "$CHECK_OUT" | tr -d '\n'
-                # MODIFICA 4: strip_colors
                 echo "$CHECK_OUT" | strip_colors >> "$LOG_FILE"
 
                 echo -n " "
@@ -295,7 +330,6 @@ run_gnl_tests() {
                 fi
             fi
             echo "----------------" >> "$LOG_FILE"
-
 
             for file in files/*; do
                 [ -e "$file" ] || continue
@@ -316,7 +350,6 @@ run_gnl_tests() {
                 else
                     CHECK_OUT=$(python3 $CHECKER_FILE "$file" outputs/user_output.txt)
                     echo "$CHECK_OUT" | tr -d '\n'
-                    # MODIFICA 5: strip_colors
                     echo "$CHECK_OUT" | strip_colors >> "$LOG_FILE"
 
                     echo -n " " 
