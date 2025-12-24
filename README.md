@@ -1,5 +1,7 @@
 # Get Next Line Tester
 
+![Last Commit](https://img.shields.io/github/last-commit/Sfabi28/gnl_tester?style=for-the-badge&color=red)
+
 A robust, strict, and comprehensive testing suite for the 42 **get_next_line** project. It covers Mandatory and Bonus parts, tests various `BUFFER_SIZE` configurations, handles `stdin`, and includes deep memory leak detection via Valgrind.
 
 ## 📁 1. Installation
