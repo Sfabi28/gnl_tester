@@ -2,8 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
-- *work in progress*
+## [1.2.0] - 2026-01-09
+### Added
+- **Auto-Cleaner**: Now at the end of the tests the tester delets all temp files it created except the log
+
+### Fixed
+- Fixed forbidden functions check, now excludes user's custom functions
 
 ## [1.1.0] - 2025-12-24
 ### Added
