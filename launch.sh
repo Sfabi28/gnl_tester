@@ -3,6 +3,9 @@
 SOURCE_PATH="../"
 TIMEOUT_VAL="15s"
 
+
+
+
 TESTER_NAME="gnl_tester"
 LOG_FILE="test_results.log"
 
@@ -14,6 +17,75 @@ RESET='\033[0m'
 MAGENTA='\033[95m'
 BLUE='\033[94m'
 
+
+strip_colors() {
+    sed $'s/\033\[[0-9;]*m//g'
+}
+
+check_allowed_function() {
+    echo -e "\n${BLUE}=== ALLOWED FUNCTIONS CHECK ===${NC}"
+    
+    WHITELIST_FILE=".whitelist_gnl.txt"
+    if [ ! -f "$WHITELIST_FILE" ]; then
+        echo "malloc" > "$WHITELIST_FILE"
+        echo "free" >> "$WHITELIST_FILE"
+        echo "read" >> "$WHITELIST_FILE"
+    fi
+
+    echo -e "${YELLOW}Compiling objects for check...${NC}"
+    rm -f *.o 
+
+    if [ -f "${SOURCE_PATH}get_next_line.c" ]; then
+        cc -c -Wall -Wextra -Werror "${SOURCE_PATH}get_next_line.c" "${SOURCE_PATH}get_next_line_utils.c" -I "$SOURCE_PATH" 2>/dev/null
+    fi
+    
+    if [ -f "${SOURCE_PATH}get_next_line_bonus.c" ]; then
+        cc -c -Wall -Wextra -Werror "${SOURCE_PATH}get_next_line_bonus.c" "${SOURCE_PATH}get_next_line_utils_bonus.c" -I "$SOURCE_PATH" 2>/dev/null
+    fi
+
+    if ! ls *.o >/dev/null 2>&1; then
+        echo -e "${RED}Error: No object files created. Check source paths.${NC}"
+        return
+    fi
+
+    USED_FUNCS=$(nm -u *.o | awk '{print $2}' | sort | uniq)
+    DEFINED_FUNCS=$(nm *.o | awk '$2 ~ /[TtWw]/ {print $3}' | sed 's/^_//' | sort | uniq)
+    VIOLATION=0
+    ALLOWED_FUNCS=$(cat "$WHITELIST_FILE")
+
+    for func in $USED_FUNCS; do
+        clean_func=${func%%@*}
+        clean_func=${clean_func#_}
+
+        if [[ "$clean_func" == _* || "$clean_func" == .* ]]; then
+            continue
+        fi
+        
+        if [[ "$clean_func" == "dyld_stub_binder" || "$clean_func" == "gmon_start" || \
+              "$clean_func" == "data_start" || "$clean_func" == "edata" || \
+              "$clean_func" == "end" || "$clean_func" == "bss_start" ]]; then
+            continue
+        fi
+
+        if echo "$DEFINED_FUNCS" | grep -w -q "^$clean_func$"; then
+            continue
+        fi
+
+        if ! echo "$ALLOWED_FUNCS" | grep -w -q "^$clean_func$"; then
+            echo -e "Forbidden function used: ${RED}$clean_func${NC} (raw: $func) ${RED}[KO]${NC}"
+            VIOLATION=1
+        fi
+    done
+
+    rm -f *.o
+
+    if [ $VIOLATION -eq 0 ]; then
+        echo -e "No Forbidden Functions. ${GREEN}[OK]${NC}"
+    else
+        echo -e "${RED}Forbidden functions detected!${NC}"
+        echo "FORBIDDEN FUNCTIONS DETECTED" >> "$LOG_FILE"
+    fi
+}
 
 check_dev_mode() {
     CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
@@ -52,27 +124,27 @@ check_updates() {
                 echo -e "\n${GREEN}✅ Update successful!${NC}"
                 echo -e "${CYAN}Please restart the tester to apply changes.${NC}"
                 exit 0
-            else
-                echo -e "${YELLOW}Update skipped. Continuing with current version...${NC}\n"
             fi
         else
-            echo -e "${GREEN}[UP TO DATE]${NC}"
+            echo -e "${GREEN}[UP-TO-DATE]${NC}"
         fi
     fi
 }
 
+cleanup() {
+    rm -f *.o gnl_tester gnl_error_tester
+    rm -rf outputs
+}
+
+trap cleanup EXIT
+
 check_dev_mode
 check_updates
-
-strip_colors() {
-    sed $'s/\033\[[0-9;]*m//g'
-}
 
 echo "=== TEST SESSION STARTED: $(date) ===" > "$LOG_FILE"
 echo "Detailed logs below." >> "$LOG_FILE"
 echo "-----------------------------------" >> "$LOG_FILE"
 echo ""
-
 echo -e "${CYAN} Checking Norminette...${RESET}"
 
 TESTER_DIR=$(basename "$PWD")
@@ -96,58 +168,11 @@ else
 fi
 echo ""
 
-check_allowed_function() {
-    MODE=$1
-    echo -e "\n${BLUE}=== ALLOWED FUNCTIONS CHECK ($MODE) ===${RESET}"
-
-    if [ "$MODE" == "BONUS" ]; then
-        SRCS="${SOURCE_PATH}get_next_line_bonus.c ${SOURCE_PATH}get_next_line_utils_bonus.c"
-    else
-        SRCS="${SOURCE_PATH}get_next_line.c ${SOURCE_PATH}get_next_line_utils.c"
-    fi
-
-    cc -Wall -Wextra -Werror -D BUFFER_SIZE=42 -c $SRCS -I "$SOURCE_PATH" > /dev/null 2>&1
-    
-    if [ $? -ne 0 ]; then
-        echo -e "${RED}Compilation failed checking functions. (Files missing?)${RESET}"
-        return
-    fi
-
-    UNDEFINED=$(nm -u *.o 2>/dev/null | grep -v ":" | awk '{print $NF}' | sort | uniq)
-    MY_FUNCS=$(nm -gU *.o 2>/dev/null | grep -v ":" | awk '{print $NF}' | sed 's/^_//' | sort | uniq)
-    ALLOWED="read malloc free"
-    VIOLATION=0
-
-    for func in $UNDEFINED; do
-        clean_func=${func%%@*}
-        clean_func=${clean_func#_}
-
-        if [[ -z "$clean_func" || "$clean_func" == .* ]]; then continue; fi
-        if [[ "$clean_func" == "dyld_stub_binder" || "$clean_func" == "stack_chk_fail" || "$clean_func" == "_stack_chk_fail" ]]; then continue; fi
-
-        if echo "$MY_FUNCS" | grep -F -x -q "$clean_func"; then continue; fi
-
-        if ! echo "$ALLOWED" | grep -F -x -q "$clean_func"; then
-            echo -e "${RED}Forbidden function used: $clean_func${RESET}"
-            VIOLATION=1
-        fi
-    done
-
-    rm -f *.o
-
-    if [ $VIOLATION -eq 0 ]; then
-        echo -e "No Forbidden Functions. ${GREEN}[OK]${RESET}"
-    else
-        echo -e "${RED}Forbidden functions detected!${RESET}"
-        echo "FORBIDDEN FUNCTIONS DETECTED ($MODE)" >> "$LOG_FILE"
-    fi
-}
-
 run_gnl_tests() {
     MODE=$1
     
     echo -e "\n${BLUE}**************************************************${RESET}"
-    echo -e "${BLUE}        STARTING MODE: $MODE PART                 ${RESET}"
+    echo -e "${BLUE}        STARTING MODE: $MODE PART                  ${RESET}"
     echo -e "${BLUE}**************************************************${RESET}\n"
     echo -e "\n\n>>> STARTING $MODE PART <<<\n" >> "$LOG_FILE"
 
@@ -220,7 +245,6 @@ run_gnl_tests() {
                     CHECK_OUT=$(python3 $CHECKER_FILE "$FILE_A" "$FILE_B" outputs/user_output.txt)
                     echo "$CHECK_OUT" | tr -d '\n'
                     echo "$CHECK_OUT" | strip_colors >> "$LOG_FILE"
-                    
                     echo -n " "
                     if grep -q "All heap blocks were freed -- no leaks are possible" outputs/valgrind.log; then
                         echo -e "${GREEN}[MOK]${RESET}"
@@ -253,7 +277,6 @@ run_gnl_tests() {
                     CHECK_OUT=$(python3 $CHECKER_FILE "$FILE_A" "$FILE_B" outputs/user_output.txt)
                     echo "$CHECK_OUT" | tr -d '\n'
                     echo "$CHECK_OUT" | strip_colors >> "$LOG_FILE"
-
                     echo -n " "
                     if grep -q "All heap blocks were freed -- no leaks are possible" outputs/valgrind.log; then
                         echo -e "${GREEN}[MOK]${RESET}"
@@ -293,7 +316,6 @@ run_gnl_tests() {
                     CHECK_OUT=$(python3 $CHECKER_FILE "$TWIN_FILE" "$TWIN_FILE" outputs/user_output.txt)
                     echo "$CHECK_OUT" | tr -d '\n'
                     echo "$CHECK_OUT" | strip_colors >> "$LOG_FILE"
-
                     echo -n " "
                     if grep -q "All heap blocks were freed -- no leaks are possible" outputs/valgrind.log; then
                         echo -e "${GREEN}[MOK]${RESET}"
@@ -307,15 +329,14 @@ run_gnl_tests() {
             fi
 
         else
-            
             if [ -e "main_error.c" ]; then
                 echo -n "Test INVALID FDs: "
                 echo "Test: INVALID FDs" >> "$LOG_FILE"
 
                 if [ "$SIZE" == "DEFAULT" ]; then
-                     cc -Wall -Wextra -Werror -g main_error.c "$SRC_GNL" "$SRC_UTILS" -I "${SOURCE_PATH}" -o gnl_error_tester
+                      cc -Wall -Wextra -Werror -g main_error.c "$SRC_GNL" "$SRC_UTILS" -I "${SOURCE_PATH}" -o gnl_error_tester
                 else
-                     cc -Wall -Wextra -Werror -g -D BUFFER_SIZE=$SIZE main_error.c "$SRC_GNL" "$SRC_UTILS" -I "${SOURCE_PATH}" -o gnl_error_tester
+                      cc -Wall -Wextra -Werror -g -D BUFFER_SIZE=$SIZE main_error.c "$SRC_GNL" "$SRC_UTILS" -I "${SOURCE_PATH}" -o gnl_error_tester
                 fi
                 
                 if [ $? -eq 0 ]; then
@@ -369,7 +390,6 @@ run_gnl_tests() {
                 CHECK_OUT=$(python3 $CHECKER_FILE outputs/stdin_expected.txt outputs/user_output.txt)
                 echo "$CHECK_OUT" | tr -d '\n'
                 echo "$CHECK_OUT" | strip_colors >> "$LOG_FILE"
-
                 echo -n " "
                 if grep -q "All heap blocks were freed -- no leaks are possible" outputs/valgrind.log; then
                     echo -e "${GREEN}[MOK]${RESET}"
@@ -401,7 +421,6 @@ run_gnl_tests() {
                     CHECK_OUT=$(python3 $CHECKER_FILE "$file" outputs/user_output.txt)
                     echo "$CHECK_OUT" | tr -d '\n'
                     echo "$CHECK_OUT" | strip_colors >> "$LOG_FILE"
-
                     echo -n " " 
                     
                     if grep -q "All heap blocks were freed -- no leaks are possible" outputs/valgrind.log; then
@@ -425,14 +444,18 @@ run_gnl_tests() {
 echo -e "\n${CYAN}=== GNL TESTER ===${RESET}"
 
 if [ "$1" == "b" ]; then
+    check_allowed_function
     run_gnl_tests "BONUS"
 elif [ "$1" == "" ]; then
+    check_allowed_function
     run_gnl_tests "MANDATORY"
     run_gnl_tests "BONUS"
 elif [ "$1" == "m" ]; then
+    check_allowed_function
     run_gnl_tests "MANDATORY"
 else
     echo -e "${YELLOW}(Default: MANDATORY)${RESET}"
+    check_allowed_function
     run_gnl_tests "MANDATORY"
 fi
 echo -e "\n${CYAN}=== DONE ===${RESET}"
