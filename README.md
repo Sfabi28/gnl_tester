@@ -36,16 +36,8 @@ Ensure that the path is right and set a proper timeout time considering valgrind
    TIMEOUT_VAL=15
 ```
 
-## 🚀 2. First Run
 
-
-Before running the tester for the first time, you must grant execution permissions to the main script:
-
-```bash
-chmod +x launch.sh
-```
-
-## ⚙️ 3. Usage Commands
+## ⚙️ 2. Usage Commands
 -----------------
 The tester supports different modes.
 
@@ -56,7 +48,7 @@ Command,Description
 ./launch.sh b, Runs BONUS tests only (Multiple FDs).
 ```
 
-## 📊 4. Results Legend
+## 📊 3. Results Legend
 -----------------
 
 ```text
@@ -73,7 +65,7 @@ Memory Analysis (if Valgrind is active)
     [MKO] : Memory KO. Leaks detected (check your free() calls and static variable management).
 ```
 
-## 📝 5. What is tested
+## 📝 4. What is tested
 -----------
 ```text
 The suite runs your get_next_line against the system's getline or expected outputs under stress conditions:
