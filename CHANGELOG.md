@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [1.3.0] - 2026-01-14
 ### Added
 - **Files-Handling**: sources put in srcs directory to improve QoL
+- **Makefile**: added makefile
 
 ### Fixed
 - Fixed line per line checks missing

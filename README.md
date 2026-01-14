@@ -17,6 +17,7 @@ Ensure that the folder of this tester (`gnl_tester`) is located **INSIDE** the r
     ├── (bonus files if applicable)
     └── gnl_tester/          <--- YOU ARE HERE
           ├── launch.sh
+          ├── Makefile
           ├── CHANGELOG.md
           ├── README.md
           ├── srcs
