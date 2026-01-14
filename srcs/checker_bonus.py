@@ -1,5 +1,6 @@
 import sys
 from itertools import zip_longest
+from datetime import datetime
 
 GREEN = "\033[92m"
 RED   = "\033[91m"
@@ -41,11 +42,22 @@ def solve():
     if expected_string == actual_string:
         print(f"{GREEN}[OK]{RESET}")
     else:
-        print(f"{RED}[KO]{RESET}")
-        print("--- EXPECTED MIX ---")
-        print(expected_string)
-        print("--- YOUR MIX ---")
-        print(actual_string)
+        print(f"{RED}KO{RESET}")
+        try:
+            with open('checker.log', 'a', encoding='utf-8', errors='ignore') as logf:
+                logf.write(f"--- {datetime.now().isoformat()} ---\n")
+                logf.write("EXPECTED:\n")
+                logf.write(expected_string)
+                if not expected_string.endswith('\n'):
+                    logf.write('\n')
+                logf.write("---\n")
+                logf.write("RECEIVED:\n")
+                logf.write(actual_string)
+                if not actual_string.endswith('\n'):
+                    logf.write('\n')
+                logf.write("\n")
+        except Exception:
+            pass
 
 if __name__ == "__main__":
     solve()

@@ -1,4 +1,5 @@
 import sys
+from datetime import datetime
 
 GREEN = "\033[92m"
 RED   = "\033[91m"
@@ -16,13 +17,19 @@ with open(file_utente, 'r', errors='ignore') as f2:
 if testo_corretto == testo_tuo:
     print(f"{GREEN}OK{RESET}")
 else:
-    print(RED)
-    print("KO\n")
-    print("Expected output: ")
-    print("\n")
-    print(testo_corretto)
-    print("\n")
-    print("Your output: ")
-    print("\n")
-    print(testo_tuo)
-    print(RESET)
+    print(f"{RED}KO{RESET}")
+    try:
+        with open('checker.log', 'a', encoding='utf-8', errors='ignore') as logf:
+            logf.write(f"--- {datetime.now().isoformat()} ---\n")
+            logf.write("EXPECTED:\n")
+            logf.write(testo_corretto)
+            if not testo_corretto.endswith('\n'):
+                logf.write('\n')
+            logf.write("---\n")
+            logf.write("RECEIVED:\n")
+            logf.write(testo_tuo)
+            if not testo_tuo.endswith('\n'):
+                logf.write('\n')
+            logf.write("\n")
+    except Exception:
+        pass
