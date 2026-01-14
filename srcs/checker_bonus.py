@@ -44,7 +44,7 @@ def solve():
     else:
         print(f"{RED}KO{RESET}")
         try:
-            with open('checker.log', 'a', encoding='utf-8', errors='ignore') as logf:
+            with open('errors.log', 'a', encoding='utf-8', errors='ignore') as logf:
                 logf.write(f"--- {datetime.now().isoformat()} ---\n")
                 logf.write("EXPECTED:\n")
                 logf.write(expected_string)
