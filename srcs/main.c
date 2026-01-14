@@ -5,7 +5,8 @@
 
 int main(int argc, char **argv)
 {
-    setvbuf(stdout, NULL, _IONBF, 0);
+    char    marker = '\x04';
+
     int     fd;
     char    *line;
 
@@ -19,13 +20,12 @@ int main(int argc, char **argv)
         }
     }
     else
-    {
         fd = 0;
-    }
 
     while ((line = get_next_line(fd)))
     {
         printf("%s", line);
+        putchar(marker);
         free(line);
     }
     
