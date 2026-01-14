@@ -16,6 +16,7 @@ YELLOW='\033[93m'
 RESET='\033[0m'
 MAGENTA='\033[95m'
 BLUE='\033[94m'
+NC="$RESET"
 
 
 strip_colors() {
@@ -238,9 +239,15 @@ run_gnl_tests() {
                 if [ $EXIT_CODE -eq 124 ]; then
                     echo -e "${RED}[TIMEOUT]${RESET}"
                     echo "Result: TIMEOUT" >> "$LOG_FILE"
-                elif [ $EXIT_CODE -eq 139 ]; then
-                    echo -e "${RED}[SIGSEGV]${RESET}"
-                    echo "Result: CRASH (SIGSEGV)" >> "$LOG_FILE"
+                elif [ $EXIT_CODE -gt 128 ]; then
+                    SIGNAL=$((EXIT_CODE - 128))
+                    if [ $SIGNAL -eq 11 ]; then
+                        echo -e "${RED}[SIGSEGV]${RESET}"
+                        echo "Result: CRASH (SIGSEGV)" >> "$LOG_FILE"
+                    else
+                        echo -e "${RED}[CRASH signal $SIGNAL]${RESET}"
+                        echo "Result: CRASH (signal $SIGNAL)" >> "$LOG_FILE"
+                    fi
                 else
                     CHECK_OUT=$(python3 $CHECKER_FILE "$FILE_A" "$FILE_B" outputs/user_output.txt)
                     echo "$CHECK_OUT" | tr -d '\n'
@@ -270,9 +277,15 @@ run_gnl_tests() {
                 if [ $EXIT_CODE -eq 124 ]; then
                     echo -e "${RED}[TIMEOUT]${RESET}"
                     echo "Result: TIMEOUT" >> "$LOG_FILE"
-                elif [ $EXIT_CODE -eq 139 ]; then
-                    echo -e "${RED}[SIGSEGV]${RESET}"
-                    echo "Result: CRASH" >> "$LOG_FILE"
+                elif [ $EXIT_CODE -gt 128 ]; then
+                    SIGNAL=$((EXIT_CODE - 128))
+                    if [ $SIGNAL -eq 11 ]; then
+                        echo -e "${RED}[SIGSEGV]${RESET}"
+                        echo "Result: CRASH (SIGSEGV)" >> "$LOG_FILE"
+                    else
+                        echo -e "${RED}[CRASH signal $SIGNAL]${RESET}"
+                        echo "Result: CRASH (signal $SIGNAL)" >> "$LOG_FILE"
+                    fi
                 else
                     CHECK_OUT=$(python3 $CHECKER_FILE "$FILE_A" "$FILE_B" outputs/user_output.txt)
                     echo "$CHECK_OUT" | tr -d '\n'
@@ -309,9 +322,15 @@ run_gnl_tests() {
                 if [ $EXIT_CODE -eq 124 ]; then
                     echo -e "${RED}[TIMEOUT]${RESET}"
                     echo "Result: TIMEOUT" >> "$LOG_FILE"
-                elif [ $EXIT_CODE -eq 139 ]; then
-                    echo -e "${RED}[SIGSEGV]${RESET}"
-                    echo "Result: CRASH" >> "$LOG_FILE"
+                elif [ $EXIT_CODE -gt 128 ]; then
+                    SIGNAL=$((EXIT_CODE - 128))
+                    if [ $SIGNAL -eq 11 ]; then
+                        echo -e "${RED}[SIGSEGV]${RESET}"
+                        echo "Result: CRASH (SIGSEGV)" >> "$LOG_FILE"
+                    else
+                        echo -e "${RED}[CRASH signal $SIGNAL]${RESET}"
+                        echo "Result: CRASH (signal $SIGNAL)" >> "$LOG_FILE"
+                    fi
                 else
                     CHECK_OUT=$(python3 $CHECKER_FILE "$TWIN_FILE" "$TWIN_FILE" outputs/user_output.txt)
                     echo "$CHECK_OUT" | tr -d '\n'
@@ -346,9 +365,15 @@ run_gnl_tests() {
                     if [ $EXIT_CODE -eq 124 ]; then
                         echo -e "${RED}[TIMEOUT]${RESET}"
                         echo "Result: TIMEOUT" >> "$LOG_FILE"
-                    elif [ $EXIT_CODE -eq 139 ]; then
-                        echo -e "${RED}[SIGSEGV]${RESET}"
-                        echo "Result: CRASH" >> "$LOG_FILE"
+                    elif [ $EXIT_CODE -gt 128 ]; then
+                        SIGNAL=$((EXIT_CODE - 128))
+                        if [ $SIGNAL -eq 11 ]; then
+                            echo -e "${RED}[SIGSEGV]${RESET}"
+                            echo "Result: CRASH (SIGSEGV)" >> "$LOG_FILE"
+                        else
+                            echo -e "${RED}[CRASH signal $SIGNAL]${RESET}"
+                            echo "Result: CRASH (signal $SIGNAL)" >> "$LOG_FILE"
+                        fi
                     else
                         RESULT=$(cat outputs/error_out.txt)
                         if [ "$RESULT" == "OK" ]; then
@@ -382,9 +407,15 @@ run_gnl_tests() {
             if [ $EXIT_CODE -eq 124 ]; then
                 echo -e "${RED}[TIMEOUT]${RESET}"
                 echo "Result: TIMEOUT" >> "$LOG_FILE"
-            elif [ $EXIT_CODE -eq 139 ]; then
-                echo -e "${RED}[SIGSEGV]${RESET}"
-                echo "Result: CRASH" >> "$LOG_FILE"
+            elif [ $EXIT_CODE -gt 128 ]; then
+                SIGNAL=$((EXIT_CODE - 128))
+                if [ $SIGNAL -eq 11 ]; then
+                    echo -e "${RED}[SIGSEGV]${RESET}"
+                    echo "Result: CRASH (SIGSEGV)" >> "$LOG_FILE"
+                else
+                    echo -e "${RED}[CRASH signal $SIGNAL]${RESET}"
+                    echo "Result: CRASH (signal $SIGNAL)" >> "$LOG_FILE"
+                fi
             else
                 echo -e "Line 1\nLine 2\nLine 3" > outputs/stdin_expected.txt
                 CHECK_OUT=$(python3 $CHECKER_FILE outputs/stdin_expected.txt outputs/user_output.txt)
@@ -414,9 +445,15 @@ run_gnl_tests() {
                 if [ $EXIT_CODE -eq 124 ]; then
                     echo -e "${RED}[TIMEOUT]${RESET}"
                     echo "Result: TIMEOUT" >> "$LOG_FILE"
-                elif [ $EXIT_CODE -eq 139 ]; then
-                    echo -e "${RED}[SIGSEGV]${RESET}"
-                    echo "Result: CRASH" >> "$LOG_FILE"
+                elif [ $EXIT_CODE -gt 128 ]; then
+                    SIGNAL=$((EXIT_CODE - 128))
+                    if [ $SIGNAL -eq 11 ]; then
+                        echo -e "${RED}[SIGSEGV]${RESET}"
+                        echo "Result: CRASH (SIGSEGV)" >> "$LOG_FILE"
+                    else
+                        echo -e "${RED}[CRASH signal $SIGNAL]${RESET}"
+                        echo "Result: CRASH (signal $SIGNAL)" >> "$LOG_FILE"
+                    fi
                 else
                     CHECK_OUT=$(python3 $CHECKER_FILE "$file" outputs/user_output.txt)
                     echo "$CHECK_OUT" | tr -d '\n'
