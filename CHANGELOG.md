@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] - 2026-01-14
+### Added
+- **Files-handling**: sources put in srcs directory to improve QoL
+
 ## [1.2.0] - 2026-01-09
 ### Added
 - **Auto-Cleaner**: Now at the end of the tests the tester delets all temp files it created except the log

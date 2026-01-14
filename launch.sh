@@ -26,7 +26,7 @@ strip_colors() {
 check_allowed_function() {
     echo -e "\n${BLUE}=== ALLOWED FUNCTIONS CHECK ===${NC}"
     
-    WHITELIST_FILE=".whitelist_gnl.txt"
+    WHITELIST_FILE="srcs/.whitelist_gnl.txt"
     if [ ! -f "$WHITELIST_FILE" ]; then
         echo "malloc" > "$WHITELIST_FILE"
         echo "free" >> "$WHITELIST_FILE"
@@ -181,14 +181,14 @@ run_gnl_tests() {
         GNL_FILE="get_next_line_bonus.c"
         UTILS_FILE="get_next_line_utils_bonus.c"
         HEADER_FILE="get_next_line_bonus.h"
-        MAIN_FILE="main_bonus.c"
-        CHECKER_FILE="checker_bonus.py"
+        MAIN_FILE="srcs/main_bonus.c"
+        CHECKER_FILE="srcs/checker_bonus.py"
     else
         GNL_FILE="get_next_line.c"
         UTILS_FILE="get_next_line_utils.c"
         HEADER_FILE="get_next_line.h"
-        MAIN_FILE="main.c"
-        CHECKER_FILE="checker.py"
+        MAIN_FILE="srcs/main.c"
+        CHECKER_FILE="srcs/checker.py"
     fi
 
     check_allowed_function "$MODE"

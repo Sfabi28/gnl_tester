@@ -17,10 +17,11 @@ Ensure that the folder of this tester (`gnl_tester`) is located **INSIDE** the r
     ├── (bonus files if applicable)
     └── gnl_tester/          <--- YOU ARE HERE
           ├── launch.sh
-          ├── main.c
-          ├── utils/
-          ├── files/         (test input files)
-          └── test_results.log
+          ├── CHANGELOG.md
+          ├── README.md
+          ├── srcs
+          ├── files
+          └── test_results.log (generated during testing)
 ```
 
 **Important:** To avoid accidentally committing the tester to your repository, add `gnl_tester/` to your `.gitignore` file:
@@ -33,8 +34,10 @@ Ensure that the path is right and set a proper timeout time considering valgrind
 
 ```text
    SOURCE_PATH="../"
-   TIMEOUT_VAL=15
+    TIMEOUT_VAL="15s"
 ```
+
+Note: running the tester will create an `outputs/` directory containing `user_output.txt`, `valgrind.log` (and variants) for each run.
 
 
 ## ⚙️ 2. Usage Commands
